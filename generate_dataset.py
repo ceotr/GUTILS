@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from gbdr import (
+from gutils.gbdr import (
     GliderBDReader,
     MergedGliderBDReader
 )
