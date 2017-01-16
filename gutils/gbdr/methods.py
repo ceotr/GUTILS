@@ -218,11 +218,14 @@ def get_decimal_degrees(lat_lon: str) -> float:
     else:
         return -1
 
-    dec = float(str_dec)
-    dec_fractional = float(str_dec_fractional)
-    if dec < 0:
-        dec_fractional *= -1
-    return dec + dec_fractional / 60
+    try:
+        dec = float(str_dec)
+        dec_fractional = float(str_dec_fractional)
+        if dec < 0:
+            dec_fractional *= -1
+        return dec + dec_fractional / 60
+    except ValueError:
+        return None
 
 
 def map_line(reader: io.StringIO, headers: list) -> list:
