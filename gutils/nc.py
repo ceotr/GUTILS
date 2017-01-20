@@ -97,26 +97,29 @@ class GliderNetCDFWriter(object):
 
         self.qaqc_methods = {}
 
-    def __load_datatypes(self):
+    def __load_datatypes(self, datatypes=None):
         """ Internal function to setup known datatypes
 
             Adds variables from base_variables.json
         """
 
-        datatypes_path = os.path.join(
-            self.config_path,
-            'datatypes.json'
-        )
-        if not os.path.isfile(datatypes_path):
-            # Fall back to the included datatypes.json
+        if datatypes is None:
             datatypes_path = os.path.join(
-                DEFAULT_GLIDER_BASE,
+                self.config_path,
                 'datatypes.json'
             )
+            if not os.path.isfile(datatypes_path):
+                # Fall back to the included datatypes.json
+                datatypes_path = os.path.join(
+                    DEFAULT_GLIDER_BASE,
+                    'datatypes.json'
+                )
 
-        with open(datatypes_path, 'r') as f:
-            contents = f.read()
-        self.datatypes = json.loads(contents)
+            with open(datatypes_path, 'r') as f:
+                contents = f.read()
+            self.datatypes = json.loads(contents)
+        else:
+            self.datatypes = datatypes
 
     def __update_history(self):
         """ Updates the history, date_created, date_modified
