@@ -9,6 +9,8 @@ import datetime
 
 import os
 import glob
+import shutil
+import tempfile
 
 import sensor_tracker_interface
 
@@ -18,6 +20,26 @@ import netCDF4 as nc4
 
 from gutils.nc import open_glider_netcdf
 from gutils.scripts.create_glider_netcdf import process_dataset
+from gutils.yo import find_yo_extrema
+from gutils.gps import interpolate_gps
+from gutils.yo.filters import default_filter
+from gutils.gbdr.methods import parse_glider_filename
+from gutils.level0 import *
+
+
+def pair_files(flight_list, science_list):
+    paired_files = []
+    science_names = {}
+    for f in science_list:
+        name = os.path.split(f)[1].split('.')[0]
+        science_names[name] = f
+    for f in flight_list:
+        name = os.path.split(f)[1].split('.')[0]
+        pair = [f]
+        if name in science_names:
+            pair.append(science_names[name])
+        paired_files.append(pair)
+    return paired_files
 
 
 if __name__ == '__main__':
@@ -25,11 +47,13 @@ if __name__ == '__main__':
     platform = 'otn200'
 
     flight_files = sorted(glob.glob(os.path.join(raw_data_path, '*.DBD')))
-    flightReader = GliderBDReader(flight_files)
 
     science_files = sorted(glob.glob(os.path.join(raw_data_path, '*.EBD')))
-    scienceReader = GliderBDReader(science_files)
 
+    sorted_files = pair_files(flight_files, science_files)
+
+    flightReader = GliderBDReader([sorted_files[0][0]])
+    scienceReader = GliderBDReader([sorted_files[0][1]])
     reader = MergedGliderBDReader(flightReader, scienceReader)
 
     import pprint
@@ -48,42 +72,156 @@ if __name__ == '__main__':
     # pp = pprint.PrettyPrinter(indent=4)
     # pp.pprint(sorted(list(group_headers(reader.headers).keys())))
 
+    nc_dir = '../nc/'
+    for i, pair in enumerate(sorted_files):
+        attrs = json
+        timestr = 'timestamp'
 
+        flight_path = pair[0]
+        science_path = pair[1]
 
-    nc_path = 'test.nc'
-
-    with open_glider_netcdf(nc_path, 'w') as glider_nc:
-
-        # Set global attributes
-        glider_nc.set_global_attributes(json['global'])
-
-        # Set Trajectory
-        glider_nc.set_trajectory_id(
-            json['deployment']['glider'],
-            json['deployment']['trajectory_date']
+        glider_name = attrs['deployment']['glider']
+        deployment_name = '{}-{}'.format(
+            glider_name,
+            attrs['deployment']['trajectory_date']
         )
 
-        traj_str = "{}-{}".format(
-            json['deployment']['glider'],
-            json['deployment']['trajectory_date']
-        )
+        try:
+            # Find profile breaks
+            profiles = find_profiles(flight_path, science_path, 'timestamp', 'm_depth-m')
 
-        # Set Platform
-        glider_nc.set_platform(json['deployment']['platform'])
+            # Interpolate GPS
+            interp_gps = get_file_set_gps(
+                flight_path, science_path, timestr, 'm_gps_'
+            )
+        except ValueError as e:
+            print('{} - Skipping'.format(e))
+            print('Skipping: %s' % (i + 1))
+            continue
+        print("Not skipping: %s" % (i + 1))
 
-        # Set Instruments
-        glider_nc.set_instruments(json['instruments'])
+        # Create NetCDF Files for Each Profile
+        profile_id = 0
+        profile_end = 0
+        file_path = None
+        uv_values = None
+        movepairs = []
+        empty_uv_processed_paths = []
+        reader = create_reader(flight_path, science_path)
 
-        # Set Segment ID
-        glider_nc.set_segment_id(3)
-
-        # Set Profile ID
-        glider_nc.set_profile_id(4)
+        # Tempdirectory
+        tmpdir = tempfile.mkdtemp()
 
         for line in reader:
-            glider_nc.stream_dict_insert(line)
+            if profile_end < line[timestr]:
+                # New profile! init the NetCDF output file
 
-        glider_nc.update_profile_vars()
-        glider_nc.calculate_salinity()
-        glider_nc.calculate_density()
-        glider_nc.update_bounds()
+                # Path to hold file while we create it
+                _, tmp_path = tempfile.mkstemp(dir=tmpdir, suffix='.nc', prefix='gutils')
+
+                # Open new NetCDF
+                begin_time = datetime.datetime.utcfromtimestamp(line[timestr])
+                filename = "%s_%s_%s.nc" % (
+                    glider_name,
+                    begin_time.strftime("%Y%m%dT%H%M%SZ"),
+                    'delayed'
+                )
+
+                file_path = os.path.join(
+                    nc_dir,
+                    deployment_name,
+                    filename
+                )
+
+                # NOTE: Store 1 based profile id
+                init_netcdf(tmp_path, attrs, i + 1, profile_id + 1)
+                profile = profiles[profiles[:, 2] == profile_id]
+                if len(profile) < 1:
+                    continue
+                profile_end = max(profile[:, 0])
+
+            with open_glider_netcdf(tmp_path, 'a') as glider_nc:
+                while line[timestr] <= profile_end:
+                    line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')
+                    glider_nc.stream_dict_insert(line)
+                    try:
+                        line = reader.__next__()
+                    except StopIteration:
+                        break
+
+                # Handle UV Variables
+                if glider_nc.contains('time_uv'):
+                    uv_values = backfill_uv_variables(
+                        glider_nc, empty_uv_processed_paths
+                    )
+                elif uv_values is not None:
+                    fill_uv_variables(glider_nc, uv_values)
+                    del empty_uv_processed_paths[:]
+                else:
+                    empty_uv_processed_paths.append(tmp_path)
+
+                glider_nc.update_profile_vars()
+                try:
+                    glider_nc.calculate_salinity()
+                    glider_nc.calculate_density()
+                except BaseException as e:
+                    print(e)
+                glider_nc.update_bounds()
+
+            movepairs.append((tmp_path, file_path))
+
+            profile_id += 1
+
+        for tp, fp in movepairs:
+            try:
+                os.makedirs(os.path.dirname(fp))
+            except OSError:
+                pass  # destination folder exists
+            shutil.move(tp, fp)
+        shutil.rmtree(tmpdir)
+
+
+
+
+
+
+
+
+
+
+
+    # with open_glider_netcdf(nc_path, 'w') as glider_nc:
+    #
+    #     # Set global attributes
+    #     glider_nc.set_global_attributes(json['global'])
+    #
+    #     # Set Trajectory
+    #     glider_nc.set_trajectory_id(
+    #         json['deployment']['glider'],
+    #         json['deployment']['trajectory_date']
+    #     )
+    #
+    #     traj_str = "{}-{}".format(
+    #         json['deployment']['glider'],
+    #         json['deployment']['trajectory_date']
+    #     )
+    #
+    #     # Set Platform
+    #     glider_nc.set_platform(json['deployment']['platform'])
+    #
+    #     # Set Instruments
+    #     glider_nc.set_instruments(json['instruments'])
+    #
+    #     # Set Segment ID
+    #     glider_nc.set_segment_id(3)
+    #
+    #     # Set Profile ID
+    #     glider_nc.set_profile_id(4)
+    #
+    #     for line in reader:
+    #         glider_nc.stream_dict_insert(line)
+    #
+    #     glider_nc.update_profile_vars()
+    #     glider_nc.calculate_salinity()
+    #     glider_nc.calculate_density()
+    #     glider_nc.update_bounds()

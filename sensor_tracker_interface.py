@@ -47,7 +47,7 @@ def replace_none(val):
 
 class SensorTrackerInterface(object):
     def __init__(self):
-        engine = create_engine(database_config.DATABASE_CONNECTOR, echo=True)
+        engine = create_engine(database_config.DATABASE_CONNECTOR)
         m = MetaData()
         m.reflect(engine)
         self.Base = automap_base(metadata=m)
