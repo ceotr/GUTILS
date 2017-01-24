@@ -18,7 +18,8 @@ import sensor_tracker_interface
 import numpy as np
 import netCDF4 as nc4
 
-from gutils.nc import open_glider_netcdf
+# from gutils.nc import open_glider_netcdf
+from sensor_tracker_interface import open_glider_netcdf
 from gutils.scripts.create_glider_netcdf import process_dataset
 from gutils.yo import find_yo_extrema
 from gutils.gps import interpolate_gps
@@ -45,6 +46,7 @@ def pair_files(flight_list, science_list):
 if __name__ == '__main__':
     raw_data_path = '/home/bcovey/full_res_data/subset/'
     platform = 'otn200'
+    start_time = datetime.datetime.strptime('2017-01-19 00:00:00', '%Y-%m-%d %H:%M:%S')
 
     flight_files = sorted(glob.glob(os.path.join(raw_data_path, '*.DBD')))
 
@@ -140,7 +142,7 @@ if __name__ == '__main__':
                     continue
                 profile_end = max(profile[:, 0])
 
-            with open_glider_netcdf(tmp_path, 'a') as glider_nc:
+            with sensor_tracker_interface.open_glider_netcdf(tmp_path, platform, start_time, 'a') as glider_nc:
                 while line[timestr] <= profile_end:
                     line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')
                     glider_nc.stream_dict_insert(line)

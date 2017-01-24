@@ -1,4 +1,5 @@
 import re
+import os
 import datetime
 
 from sqlalchemy.ext.automap import automap_base
@@ -8,7 +9,11 @@ from sqlalchemy.sql.expression import case, func
 import sqlalchemy
 import atexit
 
+from netCDF4 import Dataset
+
 import database_config
+
+from gutils.nc import GliderNetCDFWriter
 
 special_instruments = [
     'm',
@@ -21,7 +26,8 @@ def add_or_append(dictionary, key, value):
     if key not in dictionary:
         dictionary[key] = [value]
     else:
-        dictionary[key].append(value)
+        if value not in dictionary[key]:
+            dictionary[key].append(value)
 
 
 def group_headers(headers):
@@ -29,11 +35,11 @@ def group_headers(headers):
     for header in headers:
         match = re.match(r'^(sci_[a-zA-Z0-9]*)_(.*)', header['name'])
         if match:
-            add_or_append(instruments, match.group(1), header['name'])
+            add_or_append(instruments, match.group(1), '%s-%s' % (header['name'], header['units'].lower()))
         else:
             match = re.match(r'^([a-zA-Z]*)_(.*)', header['name'])
             if match:
-                add_or_append(instruments, match.group(1), header['name'])
+                add_or_append(instruments, match.group(1), '%s-%s' % (header['name'], header['units'].lower()))
             else:
                 raise Exception("Encountered an unidentifiable instrument: %s" % header['name'])
     return instruments
@@ -157,7 +163,7 @@ class SensorTrackerInterface(object):
                     InstrumentOnPlatform.end_time >= deployment.end_time,
                     InstrumentOnPlatform.end_time.is_(None)
                 )
-            ).all()
+            ).group_by(Instrument.id).all()
         else:
             result = self.session.query(
                 Instrument,
@@ -165,10 +171,20 @@ class SensorTrackerInterface(object):
             ).join(InstrumentOnPlatform, Platform).filter(
                 Platform.name == platform_name,
                 InstrumentOnPlatform.start_time <= deployment.start_time
-            ).all()
+            ).group_by(Instrument.id).all()
         results = []
         for i in result:
             results.append(i.instruments_instrument)
+        return results
+
+    def get_output_sensors(self, instrument_id):
+        Instrument = self.Base.classes.instruments_instrument
+        Sensor = self.Base.classes.instruments_sensor
+
+        results = self.session.query(Sensor).join(Instrument).filter(
+            Instrument.id==instrument_id,
+            Sensor.include_in_output==True
+        ).all()
         return results
 
     def get_json_format_for_deployment(self, platform_name, start_time):
@@ -279,12 +295,51 @@ class SensorTrackerInterface(object):
                 })
         return attrs
 
+    def get_json_instrument_metadata_for_deployment(self, platform_name, start_time):
+        instruments = self.get_deployment_instruments(platform_name, start_time)
+        sensor_json = {}
+        for i in instruments:
+            sensors = self.get_output_sensors(i.id)
+            for s in sensors:
+                if s.long_name is None or s.long_name.strip() == '':
+                    quality_flag = ' '
+                else:
+                    quality_flag = "%s Quality Flag" % s.long_name
+                sensor_json[s.identifier] = {
+                    "name": replace_none(s.long_name),
+                    "type": s.type,
+                    "dimension": "time",
+                    "attrs": {
+                        "units": replace_none(s.units),
+                        "standard_name": replace_none(s.standard_name),
+                        "valid_min": replace_none(s.valid_min),
+                        "valid_max": replace_none(s.valid_max),
+                        "long_name": replace_none(s.long_name),
+                        "observation_type": "measured",
+                        "platform": "platform",
+                        "instrument": 'instrument_%s' % (i.short_name.replace(' ', '_')),
+                        "coordinates": "lon lat depth time",
+                        "accuracy": " ",
+                        "precision": " ",
+                        "resolution": " ",
+                        "sensor_name": " ",
+                        "comment": replace_none(s.comment)
+                    },
+                    "status_flag": {
+                        "attrs": {
+                            "long_name": quality_flag
+                        }
+                    }
+                }
+        return sensor_json
+
     def insert_sensor(self, sensor, instrument):
         Sensor = self.Base.classes.instruments_sensor
         s = Sensor(
             instrument_id=instrument.id,
             identifier=sensor,
-            include_in_output=False
+            include_in_output=False,
+            type='f8'
         )
         self.session.add(s)
         self.session.commit()
@@ -346,11 +401,11 @@ class SensorTrackerInterface(object):
             if inst_row is not None:
                 # Get the sensors
                 sensors = self.get_sensors(inst_row.id)
-                # Build a list of identifiers in the dataself.Base
+                # Build a list of identifiers in the database
                 sensor_identifiers = [s.identifier for s in sensors]
-                print("\nUpdating dataself.Base for: %s" % inst)
-                print("Sensors added to dataself.Base:")
-                # Find the ones that aren't already in the dataself.Base
+                print("\nUpdating database for: %s" % inst)
+                print("Sensors added to database:")
+                # Find the ones that aren't already in the database
                 for sensor in instruments[inst]:
                     if sensor not in sensor_identifiers:
                         sensors.append(self.insert_sensor(sensor, inst_row))
@@ -363,3 +418,43 @@ class SensorTrackerInterface(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.Session.close_all()
         print("Bye!")
+
+
+DEFAULT_GLIDER_BASE = os.path.dirname(__file__)
+
+
+def open_glider_netcdf(output_path, platform, start_time, mode=None, COMP_LEVEL=None,
+                       config_path=None, DEBUG=False):
+    mode = mode or 'w'
+    COMP_LEVEL = COMP_LEVEL or 1
+    config_path = config_path or DEFAULT_GLIDER_BASE
+    return OpenGliderNetCDFWriterInterface(output_path, platform, start_time, mode, COMP_LEVEL, config_path, DEBUG)
+
+
+class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
+    def __init__(self, output_path, platform, start_time, mode=None, COMP_LEVEL=None,
+                 config_path=None, DEBUG=False):
+        GliderNetCDFWriter.__init__(self, output_path, mode=None, COMP_LEVEL=None,
+                     config_path=None, DEBUG=False)
+        self.platform = platform
+        self.start_time = start_time
+
+    def __enter__(self):
+        """ Opens the NetCDF file. Sets up QAQC and time variables.
+        Updates global history variables.
+        Called at beginning of Python with block.
+        """
+        self = GliderNetCDFWriter.__enter__(self)
+        self.__append_datatypes()
+
+        return self
+
+    def __append_datatypes(self):
+        platform = self.platform
+        start_time = self.start_time
+
+        # Append types from the sensor tracker
+        st = SensorTrackerInterface()
+        sensors = st.get_json_instrument_metadata_for_deployment(platform, start_time)
+        for s in sensors:
+            self.datatypes[s] = sensors[s]
