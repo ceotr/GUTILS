@@ -435,7 +435,7 @@ class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
     def __init__(self, output_path, platform, start_time, mode=None, COMP_LEVEL=None,
                  config_path=None, DEBUG=False):
         GliderNetCDFWriter.__init__(self, output_path, mode=None, COMP_LEVEL=None,
-                     config_path=None, DEBUG=False)
+                                    config_path=None, DEBUG=False)
         self.platform = platform
         self.start_time = start_time
 
@@ -450,6 +450,8 @@ class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
         return self
 
     def __append_datatypes(self):
+        """ Pulls datatypes from the sensor tracker database and merges with datatypes.json
+        """
         platform = self.platform
         start_time = self.start_time
 

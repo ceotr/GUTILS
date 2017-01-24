@@ -78,6 +78,26 @@ def get_file_set_gps(flight_path, science_path, time_name, gps_prefix):
     return gps_values
 
 
+def get_file_set_timestamps(flight_path, science_path, flight_time_name, science_time_name, clothesline_lag_name):
+    flight_times = []
+    corrected_flight_science_times = []
+    science_times = []
+
+    reader = create_reader(flight_path, science_path)
+    for line in reader:
+        if flight_time_name in line and science_time_name in line and clothesline_lag_name in line:
+            flight_times.append(line[flight_time_name])
+            corrected_flight_science_times.append(line[science_time_name] + line[clothesline_lag_name])
+        elif science_time_name in line:
+            science_times.append(line[science_time_name])
+        else:
+            raise Exception("Line doesn't match any time names: %s" % line.keys())
+    return {
+        'flight_times': flight_times,
+        'corrected_flight_science_times': corrected_flight_science_times
+    }
+
+
 def fill_gps(line, interp_gps, time_name, gps_prefix):
     lat_name = gps_prefix + 'lat-lat'
     lon_name = gps_prefix + 'lon-lon'
@@ -85,6 +105,22 @@ def fill_gps(line, interp_gps, time_name, gps_prefix):
         timestamp = line[time_name]
         line[lat_name] = interp_gps[interp_gps[:, 0] == timestamp, 1][0]
         line[lon_name] = interp_gps[interp_gps[:, 0] == timestamp, 2][0]
+
+    return line
+
+
+def fill_timestamp(line, interp_time, sci_time_name):
+    flight = interp_time['flight_times']
+    flight_sci = interp_time['corrected_flight_science_times']
+
+    if sci_time_name in line:
+        line['i_timestamp'] = np.interp(
+            line[sci_time_name],
+            flight_sci,
+            flight
+        )
+    else:
+        raise ValueError("%s not found in line. Can't interp time" % sci_time_name)
 
     return line
 

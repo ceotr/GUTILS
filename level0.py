@@ -96,6 +96,14 @@ if __name__ == '__main__':
             interp_gps = get_file_set_gps(
                 flight_path, science_path, timestr, 'm_gps_'
             )
+
+            interp_time = get_file_set_timestamps(
+                flight_path,
+                science_path,
+                'm_present_time-timestamp',
+                'sci_m_present_time-timestamp',
+                'm_science_clothesline_lag-s'
+            )
         except ValueError as e:
             print('{} - Skipping'.format(e))
             print('Skipping: %s' % (i + 1))
@@ -145,6 +153,8 @@ if __name__ == '__main__':
             with sensor_tracker_interface.open_glider_netcdf(tmp_path, platform, start_time, 'a') as glider_nc:
                 while line[timestr] <= profile_end:
                     line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')
+                    line = fill_timestamp(line, interp_time, 'sci_m_present_time-timestamp')
+
                     glider_nc.stream_dict_insert(line)
                     try:
                         line = reader.__next__()
@@ -181,49 +191,3 @@ if __name__ == '__main__':
                 pass  # destination folder exists
             shutil.move(tp, fp)
         shutil.rmtree(tmpdir)
-
-
-
-
-
-
-
-
-
-
-
-    # with open_glider_netcdf(nc_path, 'w') as glider_nc:
-    #
-    #     # Set global attributes
-    #     glider_nc.set_global_attributes(json['global'])
-    #
-    #     # Set Trajectory
-    #     glider_nc.set_trajectory_id(
-    #         json['deployment']['glider'],
-    #         json['deployment']['trajectory_date']
-    #     )
-    #
-    #     traj_str = "{}-{}".format(
-    #         json['deployment']['glider'],
-    #         json['deployment']['trajectory_date']
-    #     )
-    #
-    #     # Set Platform
-    #     glider_nc.set_platform(json['deployment']['platform'])
-    #
-    #     # Set Instruments
-    #     glider_nc.set_instruments(json['instruments'])
-    #
-    #     # Set Segment ID
-    #     glider_nc.set_segment_id(3)
-    #
-    #     # Set Profile ID
-    #     glider_nc.set_profile_id(4)
-    #
-    #     for line in reader:
-    #         glider_nc.stream_dict_insert(line)
-    #
-    #     glider_nc.update_profile_vars()
-    #     glider_nc.calculate_salinity()
-    #     glider_nc.calculate_density()
-    #     glider_nc.update_bounds()

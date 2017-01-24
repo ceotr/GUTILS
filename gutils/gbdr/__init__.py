@@ -76,16 +76,12 @@ class MergedGliderBDReader(object):
     def __read_flight_values(self):
         try:
             self.flight_values = self.flight_reader.__next__()
-            if 'sci_m_present_time-timestamp' in self.flight_values:
-                self.flight_values['sci_m_present_time-timestamp-flight'] = self.flight_values['sci_m_present_time-timestamp']
         except:
             self.flight_values = None
 
     def __read_science_values(self):
         try:
             self.science_values = self.science_reader.__next__()
-            if 'sci_m_present_time-timestamp' in self.science_values:
-                self.science_values['sci_m_present_time-timestamp-science'] = self.science_values['sci_m_present_time-timestamp']
         except StopIteration:
             self.science_values = None
 
