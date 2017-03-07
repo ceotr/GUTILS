@@ -203,7 +203,6 @@ class GliderNetCDFWriter(object):
         time_coverage_resolution
         time_coverage_start
         """
-
         for key, value in sorted(global_attributes.items()):
             self.nc.setncattr(key, value)
 
@@ -532,7 +531,13 @@ class GliderNetCDFWriter(object):
         for key, desc in self.datatypes.items():
             if 'global_bound' in desc:
                 prefix = desc['global_bound']
-                dataset = self.nc.variables[desc['name']][:]
+                try:
+                    dataset = self.nc.variables[desc['name']][:]
+                except KeyError:
+                    print(desc)
+                    print(key)
+                    print(self.nc.variables.keys())
+                    raise
                 self.nc.setncattr(
                     prefix + '_min',
                     self.__netcdf_to_np_op(

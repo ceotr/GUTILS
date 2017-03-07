@@ -69,24 +69,32 @@ def find_yo_extrema(timestamps, depth):
 
     est_data = clean_dataset(est_data)
 
-    # Stretch estimated values for interpolation to span entire dataset
-    interp_data = np.interp(
-        timestamps,
-        est_data[:, 0],
-        est_data[:, 1],
-        left=est_data[0, 1],
-        right=est_data[-1, 1]
-    )
+    if len(est_data) > 0:
+        # Stretch estimated values for interpolation to span entire dataset
+        interp_data = np.interp(
+            timestamps,
+            est_data[:, 0],
+            est_data[:, 1],
+            left=est_data[0, 1],
+            right=est_data[-1, 1]
+        )
 
-    interp_data = boxcar_smooth_dataset(interp_data, 5)
+        interp_data = boxcar_smooth_dataset(interp_data, 5)
 
-    delta_depth = calculate_delta_depth(interp_data)
+        delta_depth = calculate_delta_depth(interp_data)
 
-    interp_indices = np.argwhere(delta_depth == 0).flatten()
+        interp_indices = np.argwhere(delta_depth == 0).flatten()
 
-    profiled_dataset = np.zeros((len(timestamps), 3))
-    profiled_dataset[:, TIME_DIM] = timestamps
-    profiled_dataset[:, DATA_DIM] = interp_data
+        profiled_dataset = np.zeros((len(timestamps), 3))
+        profiled_dataset[:, TIME_DIM] = timestamps
+        profiled_dataset[:, DATA_DIM] = interp_data
+    else:
+        # If there are no cleaned depth and time values
+        # This seems to happen if the glider spends a segment at the surface
+        profiled_dataset = np.zeros((len(timestamps), 3))
+        profiled_dataset[:, TIME_DIM] = timestamps
+        profiled_dataset[:, DATA_DIM] = depth
+        interp_indices = []
 
     start_index = 0
     for profile_id, end_index in enumerate(interp_indices):

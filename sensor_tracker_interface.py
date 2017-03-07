@@ -113,6 +113,22 @@ class SensorTrackerInterface(object):
         ).one()
         return result
 
+    def get_deployments(self, platform_name=None, deployment_number=None):
+        Platform = self.Base.classes.platforms_platform
+        PlatformDeployment = self.Base.classes.platforms_platformdeployment
+
+        if platform_name is not None:
+            result = self.session.query(PlatformDeployment, Platform).join(Platform).filter(
+                Platform.name == platform_name
+            )
+        else:
+            result = self.session.query(PlatformDeployment, Platform).join(Platform)
+
+        if deployment_number is not None:
+            result = result.filter(PlatformDeployment.deployment_number == deployment_number)
+
+        return result.all()
+
     def get_deployment_institution(self, platform_name, start_time):
         Platform = self.Base.classes.platforms_platform
         PlatformDeployment = self.Base.classes.platforms_platformdeployment
@@ -237,32 +253,33 @@ class SensorTrackerInterface(object):
             platform = self.get_platform(platform_name)
         except sqlalchemy.orm.exc.NoResultFound:
             raise ValueError("No platform named: %s found in sensor_tracker" % platform_name)
+
+        # Fill in the non-static portion of the global attributes
+        attrs['global']["wmo_id"] = replace_none(deployment.wmo_id)
+        attrs['global']["naming_authority"] = replace_none(naming_authority)
+        attrs['global']["institution"] = replace_none(institution.name)
+        attrs['global']["creator_email"] = replace_none(deployment.creator_email)
+        attrs['global']["creator_name"] = replace_none(deployment.creator_name)
+        attrs['global']["creator_url"] = replace_none(deployment.creator_url)
+        attrs['global']["publisher_email"] = " "
+        attrs['global']["publisher_name"] = " "
+        attrs['global']["publisher_url"] = " "
+        attrs['global']["contributor_name"] = replace_none(deployment.contributor_name)
+        attrs['global']["contributor_role"] = replace_none(deployment.contributor_role)
+        attrs['global']["support_name"] = " "
+        attrs['global']["support_type"] = " "
+        attrs['global']["support_email"] = " "
+        attrs['global']["support_role"] = " "
+        attrs['global']["ioos_regional_association"] = " "
+        attrs['global']["acknowledgement"] = " "
+        attrs['global']["project"] = replace_none(project.name)
+        attrs['global']["sea_name"] = replace_none(deployment.sea_name)
+        attrs['global']["title"] = replace_none(deployment.title)
+
         # build a dict of deployment specific attributes
         attrs['deployment'] = {}
         attrs['deployment']['glider'] = platform_name
         attrs['deployment']['trajectory_date'] = deployment.start_time.strftime('%Y%m%dT%H%MZ')
-        attrs['deployment']['global_attributes'] = {
-            "wmo_id": replace_none(deployment.wmo_id),
-            "naming_authority": replace_none(naming_authority),
-            "institution": replace_none(institution.name),
-            "creator_email": replace_none(deployment.creator_email),
-            "creator_name": replace_none(deployment.creator_name),
-            "creator_url": replace_none(deployment.creator_url),
-            "publisher_email": " ",
-            "publisher_name": " ",
-            "publisher_url": " ",
-            "contributor_name": replace_none(deployment.contributor_name),
-            "contributor_role": replace_none(deployment.contributor_role),
-            "support_name": " ",
-            "support_type": " ",
-            "support_email": " ",
-            "support_role": " ",
-            "ioos_regional_association": " ",
-            "acknowledgement": " ",
-            "project": replace_none(project.name),
-            "sea_name": replace_none(deployment.sea_name),
-            "title": replace_none(deployment.title)
-        }
 
         attrs['deployment']['platform'] = {
             "type": "platform",
@@ -434,7 +451,7 @@ def open_glider_netcdf(output_path, platform, start_time, mode=None, COMP_LEVEL=
 class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
     def __init__(self, output_path, platform, start_time, mode=None, COMP_LEVEL=None,
                  config_path=None, DEBUG=False):
-        GliderNetCDFWriter.__init__(self, output_path, mode=None, COMP_LEVEL=None,
+        GliderNetCDFWriter.__init__(self, output_path, mode=mode, COMP_LEVEL=None,
                                     config_path=None, DEBUG=False)
         self.platform = platform
         self.start_time = start_time
