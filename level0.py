@@ -146,12 +146,13 @@ if __name__ == '__main__':
 
                 # NOTE: Store 1 based profile id
                 init_netcdf(tmp_path, attrs, i + 1, profile_id + 1)
+                # print(nc4.Dataset(tmp_path, 'a', ))
                 profile = profiles[profiles[:, 2] == profile_id]
                 if len(profile) < 1:
                     continue
                 profile_end = max(profile[:, 0])
 
-            with sensor_tracker_interface.open_glider_netcdf(tmp_path, platform, start_time, 'a') as glider_nc:
+            with sensor_tracker_interface.OpenGliderNetCDFWriterInterface(tmp_path, platform, start_time, 'a') as glider_nc:
                 glider_nc.append_datatypes(science_datatypes)
                 while line[timestr] <= profile_end:
                     line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')

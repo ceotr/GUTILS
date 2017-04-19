@@ -241,7 +241,7 @@ class SensorTrackerInterface(object):
         attrs['deployment'] = {}
         attrs['deployment']['glider'] = platform_name
         attrs['deployment']['trajectory_date'] = deployment.start_time.strftime('%Y%m%dT%H%MZ')
-        attrs['deployment']['global_attributes'] = {
+        attrs['global'].update({
             "wmo_id": replace_none(deployment.wmo_id),
             "naming_authority": replace_none(naming_authority),
             "institution": replace_none(institution.name),
@@ -262,7 +262,7 @@ class SensorTrackerInterface(object):
             "project": replace_none(project.name),
             "sea_name": replace_none(deployment.sea_name),
             "title": replace_none(deployment.title)
-        }
+        })
 
         attrs['deployment']['platform'] = {
             "type": "platform",
@@ -434,8 +434,13 @@ def open_glider_netcdf(output_path, platform, start_time, mode=None, COMP_LEVEL=
 class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
     def __init__(self, output_path, platform, start_time, mode=None, COMP_LEVEL=None,
                  config_path=None, DEBUG=False):
-        GliderNetCDFWriter.__init__(self, output_path, mode=None, COMP_LEVEL=None,
-                                    config_path=None, DEBUG=False)
+        self.nc = None
+        self.output_path = output_path
+        self.mode = mode or 'w'
+        self.COMP_LEVEL = COMP_LEVEL or 1
+        self.config_path = config_path or DEFAULT_GLIDER_BASE
+        self.DEBUG = DEBUG
+        self.datatypes = {}
         self.platform = platform
         self.start_time = start_time
 
