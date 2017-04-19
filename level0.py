@@ -69,6 +69,7 @@ if __name__ == '__main__':
             platform,
             datetime.datetime.strptime('2017-01-19 00:00:00', '%Y-%m-%d %H:%M:%S')
         )
+        science_datatypes = tracker_interface.get_json_instrument_metadata_for_deployment(platform, start_time)
         pp.pprint(json)
     # import pprint
     # pp = pprint.PrettyPrinter(indent=4)
@@ -151,6 +152,7 @@ if __name__ == '__main__':
                 profile_end = max(profile[:, 0])
 
             with sensor_tracker_interface.open_glider_netcdf(tmp_path, platform, start_time, 'a') as glider_nc:
+                glider_nc.append_datatypes(science_datatypes)
                 while line[timestr] <= profile_end:
                     line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')
                     line = fill_timestamp(line, interp_time, 'sci_m_present_time-timestamp')
@@ -173,6 +175,7 @@ if __name__ == '__main__':
                     empty_uv_processed_paths.append(tmp_path)
 
                 glider_nc.update_profile_vars()
+
                 try:
                     glider_nc.calculate_salinity()
                     glider_nc.calculate_density()

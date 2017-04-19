@@ -121,6 +121,10 @@ class GliderNetCDFWriter(object):
         else:
             self.datatypes = datatypes
 
+    def append_datatypes(self, datatypes):
+        for key in datatypes:
+            self.datatypes[key] = datatypes[key]
+
     def __update_history(self):
         """ Updates the history, date_created, date_modified
         and date_issued file attributes
@@ -254,7 +258,12 @@ class GliderNetCDFWriter(object):
 
         datatype = self.datatypes[key]
         if datatype['name'] not in self.nc.variables:
-            self.set_datatype(key, datatype)
+            try:
+                self.set_datatype(key, datatype)
+            except RuntimeError:
+                print(datatype)
+                print("Error with: %s" % datatype['name'])
+                raise
 
         return datatype
 
@@ -571,6 +580,8 @@ class GliderNetCDFWriter(object):
         required_params = ('time', 'conductivity', 'temperature', 'pressure')
         for param in required_params:
             if param not in self.nc.variables:
+                for p in required_params:
+                    print("%s: %s" % (p, (p in self.nc.variables)))
                 raise TypeError('Cannot calculate salinity: '
                                 'missing %s' % param)
 
