@@ -349,7 +349,6 @@ class GliderNetCDFWriter(object):
 
     def set_array_value(self, key, index, value=None):
         datatype = self.check_datatype_exists(key)
-
         if value is None:
             value = NC_FILL_VALUES[datatype['type']]
 
@@ -581,7 +580,6 @@ class GliderNetCDFWriter(object):
         for param in required_params:
             if param not in self.nc.variables:
                 for p in required_params:
-                    print("%s: %s" % (p, (p in self.nc.variables)))
                 raise TypeError('Cannot calculate salinity: '
                                 'missing %s' % param)
 

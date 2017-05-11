@@ -113,6 +113,22 @@ class SensorTrackerInterface(object):
         ).one()
         return result
 
+    def get_deployments(self, platform_name=None, deployment_number=None):
+        Platform = self.Base.classes.platforms_platform
+        PlatformDeployment = self.Base.classes.platforms_platformdeployment
+
+        if platform_name is not None:
+            result = self.session.query(PlatformDeployment, Platform).join(Platform).filter(
+                Platform.name == platform_name
+            )
+        else:
+            result = self.session.query(PlatformDeployment, Platform).join(Platform)
+
+        if deployment_number is not None:
+            result = result.filter(PlatformDeployment.deployment_number == deployment_number)
+
+        return result.all()
+
     def get_deployment_institution(self, platform_name, start_time):
         Platform = self.Base.classes.platforms_platform
         PlatformDeployment = self.Base.classes.platforms_platformdeployment
@@ -319,9 +335,9 @@ class SensorTrackerInterface(object):
                         "platform": "platform",
                         "instrument": 'instrument_%s' % (i.short_name.replace(' ', '_')),
                         "coordinates": "lon lat depth time",
-                        "accuracy": " ",
-                        "precision": " ",
-                        "resolution": " ",
+                        "accuracy": replace_none(s.accuracy),
+                        "precision": replace_none(s.precision),
+                        "resolution": replace_none(s.resolution),
                         "sensor_name": " ",
                         "comment": replace_none(s.comment)
                     },
