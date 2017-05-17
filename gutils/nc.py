@@ -361,7 +361,7 @@ class GliderNetCDFWriter(object):
 
     def set_array(self, key, values):
         datatype = self.check_datatype_exists(key)
-
+        
         self.nc.variables[datatype['name']][:] = values
         if "status_flag" in datatype:
             status_flag_name = self.get_status_flag_name(datatype['name'])
@@ -579,7 +579,6 @@ class GliderNetCDFWriter(object):
         required_params = ('time', 'conductivity', 'temperature', 'pressure')
         for param in required_params:
             if param not in self.nc.variables:
-                for p in required_params:
                 raise TypeError('Cannot calculate salinity: '
                                 'missing %s' % param)
 

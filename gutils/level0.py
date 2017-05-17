@@ -78,16 +78,19 @@ def get_file_set_gps(flight_path, science_path, time_name, gps_prefix):
     return gps_values
 
 
-def get_file_set_timestamps(flight_path, science_path, flight_time_name, science_time_name, clothesline_lag_name):
+def get_file_set_timestamps(flight_path, science_path, flight_time_name, science_time_name, clothesline_lag_name=None):
     flight_times = []
     corrected_flight_science_times = []
     science_times = []
 
     reader = create_reader(flight_path, science_path)
     for line in reader:
-        if flight_time_name in line and science_time_name in line and clothesline_lag_name in line:
+        if flight_time_name in line and science_time_name in line and (clothesline_lag_name in line or clothesline_lag_name is None):
             flight_times.append(line[flight_time_name])
-            corrected_flight_science_times.append(line[science_time_name] + line[clothesline_lag_name])
+            if clothesline_lag_name is not None:
+                corrected_flight_science_times.append(line[science_time_name] + line[clothesline_lag_name])
+            else:
+                corrected_flight_science_times.append(line[science_time_name])
         elif science_time_name in line:
             science_times.append(line[science_time_name])
         else:

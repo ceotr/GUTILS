@@ -129,6 +129,24 @@ class SensorTrackerInterface(object):
 
         return result.all()
 
+    def get_active_deployments(self):
+        Platform = self.Base.classes.platforms_platform
+        PlatformDeployment = self.Base.classes.platforms_platformdeployment
+        PlatformType = self.Base.classes.platforms_platformtype
+
+
+        result = self.session.query(
+            PlatformDeployment,
+            Platform
+        ).join(
+            Platform
+        ).join(PlatformType).filter(
+            PlatformDeployment.end_time == None,
+            PlatformType.model == 'Slocum Glider G2'
+        )
+
+        return result.all()
+
     def get_deployment_institution(self, platform_name, start_time):
         Platform = self.Base.classes.platforms_platform
         PlatformDeployment = self.Base.classes.platforms_platformdeployment

@@ -220,8 +220,6 @@ if __name__ == '__main__':
 
                     glider_nc.update_profile_vars()
                     try:
-                        if 'conductivity' in glider_nc.nc.variables:
-                            print("Counductivity is present")
                         glider_nc.calculate_salinity()
                         glider_nc.calculate_density()
                     except BaseException as e:
