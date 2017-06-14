@@ -413,28 +413,29 @@
             }
         }
     },
-    "m_heading-rad": {
-        "name": "heading",
+    "sci_water_temp-degc": {
+        "name": "temperature",
         "type": "f8",
         "dimension": "time",
         "attrs": {
-            "units": "radians",
-            "standard_name": "platform_yaw_angle",
-            "long_name": "Compass Heading",
-            "observation_type": "calculated",
+            "units": "degree_Celsius",
+            "standard_name": "sea_water_temperature",
+            "valid_min": -5,
+            "valid_max": 40,
+            "long_name": "Temperature",
+            "observation_type": "measured",
             "platform": "platform",
-            "instrument": "instrument_compass",
-            "comment": " ",
-            "valid_min": 0,
-            "valid_max": 6.28317,
+            "instrument": "instrument_ctd",
+            "coordinates": "lon lat depth time",
             "accuracy": " ",
             "precision": " ",
             "resolution": " ",
-            "sensor_name": " "
+            "sensor_name": " ",
+            "comment": ""
         },
         "status_flag": {
             "attrs": {
-                "long_name": "platform_yaw_angle Quality Flag"
+                "long_name": "temperature Quality Flag"
             }
         }
     },
@@ -446,7 +447,7 @@
             "units": "psu",
             "standard_name": "sea_water_practical_salinity",
             "valid_min": 0,
-            "valid_max": 40,
+            "valid_max": 10,
             "long_name": "Salinity",
             "observation_type": "calculated",
             "platform": "platform",
@@ -472,7 +473,7 @@
             "units": "kg/m^3",
             "standard_name": "sea_water_density",
             "valid_min": 0,
-            "valid_max": 1100,
+            "valid_max": 10,
             "long_name": "Density",
             "observation_type": "calculated",
             "platform": "platform",
@@ -487,6 +488,185 @@
         "status_flag": {
             "attrs": {
                 "long_name": "density Quality Flag"
+            }
+        }
+    },
+    "sci_bbfl2s_chlor_scaled-ug/l": {
+        "name": "chl",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "ug/l",
+            "standard_name": "mass_concentration_of_chlorophyll_in_sea_water",
+            "long_name": "Chlorophyll mass concentration in sea water",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_fluorometer",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 100,
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "chlorophyll Quality Flag"
+            }
+        }
+    },
+    "sci_water_cond-s/m": {
+        "name": "conductivity",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "S m-1",
+            "standard_name": "sea_water_electrical_conductivity",
+            "valid_min": 0,
+            "valid_max": 10,
+            "long_name": "Conductivity",
+            "observation_type": "measured",
+            "platform": "platform",
+            "instrument": "instrument_ctd",
+            "coordinates": "lon lat depth time",
+            "comment": " ",
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "conductivity Quality Flag"
+            }
+        }
+    },
+    "sci_water_pressure-bar": {
+        "name": "pressure",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "axis": "Z",
+            "units": "dbar",
+            "standard_name": "sea_water_pressure",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 2000,
+            "long_name": "Pressure",
+            "reference_datum": "sea-surface",
+            "positive": "down",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_ctd",
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "pressure Quality Flag"
+            }
+        }
+    },
+    "sci_bbfl2s_bb_scaled-nodim": {
+        "name": "backscatter",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "nodim",
+            "standard_name": "backscattering_ratio",
+            "long_name": "Backscatter Ratio",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_fluorometer",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 1,
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "backscatter Quality Flag"
+            }
+        }
+    },
+    "sci_oxy3835_oxygen-nodim": {
+        "name": "dissolved_oxygen",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "uM",
+            "standard_name": "mole_concentration_of_dissolved_molecular_oxygen_in_sea_water",
+            "long_name": "Dissolved Oxygen Mole Concentration",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_dissolved_oxygen",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 250,
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "mole_concentration_of_dissolved_molecular_oxygen_in_sea_water Quality Flag"
+            }
+        }
+    },
+    "sci_bbfl2s_cdom_scaled-ppb": {
+        "name": "cdom",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "parts per billion",
+            "standard_name": "concentration_of_coloured_dissolved_organic_matter",
+            "long_name": "Colored Dissolved Organic Matter",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_fluorometer",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 80,
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "cdom Quality Flag"
+            }
+        }
+    },
+    "m_heading-rad": {
+        "name": "heading",
+        "type": "f8",
+        "dimension": "time",
+        "attrs": {
+            "units": "radians",
+            "standard_name": "platform_yaw_angle",
+            "long_name": "Compass Heading",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_compass",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 6.28317,
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "platform_yaw_angle Quality Flag"
             }
         }
     }

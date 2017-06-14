@@ -52,9 +52,9 @@ if __name__ == '__main__':
             deployments = tracker_interface.get_deployments()
 
     # (glider_name, mission_start yyyy-mm-dd)
-    base_path = '/data/gliders/%s/%s/data/raw'
+    base_path = '/home/bcovey/full_res_data/%s/%s/data/raw'
 
-    nc_dir = '/home/slocum/netcdf/'
+    nc_dir = '/home/bcovey/nc_full/'
 
     for res in deployments:
         deployment = res[0]
@@ -181,7 +181,11 @@ if __name__ == '__main__':
                     )
 
                     # NOTE: Store 1 based profile id
-                    init_netcdf(tmp_path, attrs, i + 1, profile_id + 1)
+                    try:
+                        init_netcdf(tmp_path, attrs, i + 1, profile_id + 1)
+                    except:
+                        print(tmp_path)
+                        raise
                     profile = profiles[profiles[:, 2] == profile_id]
                     if len(profile) < 1:
                         continue
@@ -220,6 +224,7 @@ if __name__ == '__main__':
                         glider_nc.calculate_density()
                     except BaseException as e:
                         print(e)
+
                     glider_nc.update_bounds()
 
                 movepairs.append((tmp_path, file_path))

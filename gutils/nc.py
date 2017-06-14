@@ -121,6 +121,10 @@ class GliderNetCDFWriter(object):
         else:
             self.datatypes = datatypes
 
+    def append_datatypes(self, datatypes):
+        for key in datatypes:
+            self.datatypes[key] = datatypes[key]
+
     def __update_history(self):
         """ Updates the history, date_created, date_modified
         and date_issued file attributes
@@ -253,7 +257,12 @@ class GliderNetCDFWriter(object):
 
         datatype = self.datatypes[key]
         if datatype['name'] not in self.nc.variables:
-            self.set_datatype(key, datatype)
+            try:
+                self.set_datatype(key, datatype)
+            except RuntimeError:
+                print(datatype)
+                print("Error with: %s" % datatype['name'])
+                raise
 
         return datatype
 
@@ -339,7 +348,6 @@ class GliderNetCDFWriter(object):
 
     def set_array_value(self, key, index, value=None):
         datatype = self.check_datatype_exists(key)
-
         if value is None:
             value = NC_FILL_VALUES[datatype['type']]
 
@@ -352,7 +360,7 @@ class GliderNetCDFWriter(object):
 
     def set_array(self, key, values):
         datatype = self.check_datatype_exists(key)
-
+        
         self.nc.variables[datatype['name']][:] = values
         if "status_flag" in datatype:
             status_flag_name = self.get_status_flag_name(datatype['name'])
