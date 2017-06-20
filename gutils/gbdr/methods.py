@@ -1,31 +1,38 @@
 #!/usr/bin/env python
 
 import re
-import io
 import os
-import shutil
 import subprocess
 from glob import glob
+from whichcraft import which
+from six import StringIO
 
-
-dbd2asc_path = shutil.which('dbd2asc')  # conda
+dbd2asc_path = which('dbd2asc')  # conda
 if dbd2asc_path is None:
     dbd2asc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bin', 'dbd2asc')  # pip
 
 
-def parse_glider_filename(filename: str) -> dict:
+def parse_glider_filename(filename):
     """
     Parses a glider filename and returns details in a dictionary
 
-    Returns dictionary with the following keys:
-    * 'glider': glider name
-    * 'year': data file year created
-    * 'day': data file julian date created
-    * 'mission': data file mission id
-    * 'segment': data file segment id
-    * 'type': data file type
-    """
+    Parameters
+    ----------
+    filename : str
+        A filename to parse
 
+    Returns
+    -------
+    dict
+        Returns dictionary with the following keys:
+
+            * 'glider': glider name
+            * 'year': data file year created
+            * 'day': data file julian date created
+            * 'mission': data file mission id
+            * 'segment': data file segment id
+            * 'type': data file type
+    """
     head, tail = os.path.split(filename)
 
     matches = re.search(r"([\w\d\-]+)-(\d+)-(\d+)-(\d+)-(\d+)\.(\w+)$", tail)
@@ -48,18 +55,41 @@ def parse_glider_filename(filename: str) -> dict:
         )
 
 
-def generate_glider_filename(description: dict) -> str:
-    """ Converts a glider data file details dictionary to filename """
+def generate_glider_filename(description):
+    """Converts a glider data file details dictionary to filename
+
+    Parameters
+    ----------
+    description : dict
+        A glider data file details dict
+
+    Returns
+    -------
+    str
+        Generated glider filename
+    """
     filename = (
         "{glider}-{year:d}-{day:03d}-{mission:d}-{segment}.{type}".format(**description)
     )
     return os.path.join(description['path'], filename)
 
 
-def generate_stream(processArgs: list) -> io.StringIO:
-    """ Runs a given process, outputs the resulting text as a StringIO """
-    process = subprocess.run(processArgs, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return io.StringIO(process.stdout), process.returncode
+def generate_stream(processArgs):
+    """ Runs a given process and outputs the resulting text as a StringIO
+
+    Parameters
+    ----------
+    processArgs : list
+        Arguments to run in a process
+
+    Returns
+    -------
+    StringIO
+        Resulting text
+    """
+    process = subprocess.Popen(processArgs, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, _ = process.communicate()
+    return StringIO(stdout), process.returncode
 
 
 def can_find_bd_index(path):
@@ -76,14 +106,26 @@ def can_find_bd_index(path):
     return returncode == 0
 
 
-def process_file(path: str) -> io.StringIO:
-    """Processes a single glider data file. Returns an io.StringIO
+def process_file(path):
+    """Processes a single glider data file.
 
     Intelligently falls back if previous index file has not
     been processed for given data file.
 
-    Raises and exception if data index cannot be found for
-    given data file.
+    Parameters
+    ----------
+    path : str
+        Path to a glider data file
+
+    Returns
+    -------
+    StringIO
+        Resulting text
+
+    Raises
+    ------
+    ValueError
+        If data index cannot be found for given data file.
     """
     processArgs = [dbd2asc_path, '-c', '/tmp', path]
     stream, returncode = generate_stream(processArgs)
@@ -98,11 +140,22 @@ def process_file(path: str) -> io.StringIO:
     return stream
 
 
-def process_all_of_type(path: str, extension: str) -> io.StringIO:
+def process_all_of_type(path, extension):
     """Process glider data files of one type
 
-    No fallback.  Assumed that operation big enough
-    to avoid this issue.
+    No fallback.  Assumed that operation big enough to avoid this issue.
+
+    Parameters
+    ----------
+    path : str
+        Path to a folder of glider data files
+    extension: str
+        Extension for the type of glider you wish to process
+
+    Returns
+    -------
+    StringIO
+        Resulting text
     """
     processArgs = [dbd2asc_path, '-c', '/tmp']
     filesWildCard = '%s/*.%s' % (path, extension)
@@ -111,15 +164,25 @@ def process_all_of_type(path: str, extension: str) -> io.StringIO:
     return stream
 
 
-def process_file_list(filePaths: list) -> io.StringIO:
+def process_file_list(filePaths):
     """Process a list of glider data files to ASCII.
 
     Intelligently falls back for each file if necessary.
 
-    Raises KeyError exception if it cannot generate an index for a
-    given file.
+    Parameters
+    ----------
+    filePaths : list
+        List of glider data files to process to ASCII
 
-    Returns a io.StringIO
+    Returns
+    -------
+    StringIO
+        Resulting text
+
+    Raises
+    ------
+    KeyError
+        If it cannot generate an index for a given file.
     """
     processArgs = [dbd2asc_path, '-c', '/tmp']
 
@@ -142,19 +205,44 @@ def process_file_list(filePaths: list) -> io.StringIO:
     return stream
 
 
-def create_glider_BD_ASCII_reader(filePaths: list) -> io.StringIO:
+def create_glider_BD_ASCII_reader(filePaths):
     """Creates a glider binary data reader over a set of files
 
-    Returns an io.StringIO
+    Parameters
+    ----------
+    filePaths : list
+        List of glider data files to process to ASCII
+
+    Returns
+    -------
+    StringIO
+        Resulting text
+
+    Raises
+    ------
+    KeyError
+        If it cannot generate an index for a given file.
     """
     return process_file_list(filePaths)
 
 
-def find_glider_BD_headers(reader: io.StringIO) -> list:
+def find_glider_BD_headers(reader):
     """Finds and returns available headers in a set of glider data files
 
-    Arguments:
-    reader - A raw glider binary data reader of type subprocess.Popen
+    Parameters
+    ----------
+    reader : StringIO
+        Glider binary data reader output
+
+    Returns
+    -------
+    list
+        A list of headers
+
+    Raises
+    ------
+    EOFError
+        When no headers are found in the file
     """
 
     # Bleed off extraneous headers
@@ -190,14 +278,18 @@ def find_glider_BD_headers(reader: io.StringIO) -> list:
     return headers
 
 
-def get_decimal_degrees(lat_lon: str) -> float:
+def get_decimal_degrees(lat_lon):
     """Converts glider gps coordinate ddmm.mmm to decimal degrees dd.ddd
 
-    Arguments:
-    lat_lon - A floating point latitude or longitude in the format ddmm.mmm
-        where dd's are degrees and mm.mmm is decimal minutes.
+    Parameters
+    ----------
+    lat_lon : str
+        Glider GPS coordinate (ddmm.mmm)
 
-    Returns decimal degrees float
+    Returns
+    -------
+    float
+        Decimal degree coordinate (dd.ddd)
     """
 
     if lat_lon == 0:
@@ -228,12 +320,20 @@ def get_decimal_degrees(lat_lon: str) -> float:
         return None
 
 
-def map_line(reader: io.StringIO, headers: list) -> list:
+def map_line(reader, headers):
     """Maps all non-NaN values in a glider data file to a known header
 
-    Arguments:
-    reader - A subprocess.Popen with headers discovered
-    headers - Headers discovered in data file already
+    Parameters
+    ----------
+    reader : StringIO
+        Glider binary data reader output
+    headers : list
+        Headers discovered in data file
+
+    Returns
+    -------
+    dict
+        Mapping of glider data to a known header
     """
 
     readings = {}

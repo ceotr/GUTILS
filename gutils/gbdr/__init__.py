@@ -20,7 +20,7 @@ class GliderBDReader(object):
     fileNames - An optional set specifying exactly which files to process.
     """
 
-    def __init__(self, filePaths: list):
+    def __init__(self, filePaths):
         self.reader = (
             create_glider_BD_ASCII_reader(filePaths)
         )
@@ -41,6 +41,7 @@ class GliderBDReader(object):
         except EOFError:
             self.finished = True
             raise StopIteration
+    next = __next__
 
 
 class MergedGliderBDReader(object):
@@ -58,7 +59,7 @@ class MergedGliderBDReader(object):
         rows mergeable.  Default: 1
     """
 
-    def __init__(self, flight_reader: GliderBDReader, science_reader: GliderBDReader, merge_tolerance: int=1):
+    def __init__(self, flight_reader, science_reader, merge_tolerance=1):
         self.flight_reader = flight_reader
         self.science_reader = science_reader
         self.merge_tolerance = merge_tolerance
@@ -130,3 +131,4 @@ class MergedGliderBDReader(object):
             return ret_val
         else:
             raise StopIteration
+    next = __next__

@@ -7,7 +7,7 @@ A set of Python utilities for reading, merging, and post processing Teledyne Web
 
 ## Installation
 
-Available through [`conda`](http://conda.pydata.org/docs/install/quick.html). This library requires Python 3.5 or above.
+Available through [`conda`](http://conda.pydata.org/docs/install/quick.html). This library was designed with Python 3.5 or above in mind. I backported it to 2.7 by request. Please use 3.5+ if possible as the [gwt project](https://github.com/TEOS-10/GSW-Python) will soon end support for 2.7.
 
 ```
 $ conda create -n sgs python=3.5

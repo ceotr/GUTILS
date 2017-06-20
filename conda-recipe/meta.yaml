@@ -1,6 +1,6 @@
 package:
     name: gutils
-    version: "1.2.5"
+    version: "1.2.6"
 
 source:
     path: ../
@@ -14,12 +14,13 @@ requirements:
         - python
         - setuptools
     run:
-        - python
-        - gsw
-        - numpy
-        - scipy
+        - gsw <3.1.0
         - netcdf4
-
+        - numpy
+        - python
+        - scipy
+        - six
+        - whichcraft
 test:
     imports:
         - gutils

@@ -67,7 +67,7 @@ class TestCreateGliderScript(unittest.TestCase):
         for d in outputs:
             try:
                 shutil.rmtree(d)
-            except FileNotFoundError:
+            except (IOError, OSError):
                 pass
 
     def test_script(self):

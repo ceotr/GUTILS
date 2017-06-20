@@ -22,8 +22,8 @@ setup(
     description='A set of Python utilities for reading, merging, and post '
                 'processing Teledyne Webb Slocum Glider data.',
     long_description=readme(),
-    author='Michael Lindemuth',
-    author_email='mlindemu@usf.edu',
+    author='Kyle Wilcox',
+    author_email='kyle@axiomdatascience.com',
     install_requires=reqs,
     url='https://github.com/axiom-data-science/GUTILS',
     packages=[
