@@ -48,9 +48,9 @@ if __name__ == '__main__':
     with sensor_tracker_interface.SensorTrackerInterface() as tracker_interface:
         deployments = tracker_interface.get_active_deployments()
     # (glider_name, mission_start yyyy-mm-dd)
-    base_path = '/home/bcovey/live_data/%s/from-glider'
+    base_path = '/var/opt/gmc_gliderbak/default/gliders/%s/from-glider'
 
-    nc_dir = '/home/bcovey/nc_live/'
+    nc_dir = '/home/slocum/netcdf'
 
     for res in deployments:
         deployment = res[0]
@@ -67,10 +67,11 @@ if __name__ == '__main__':
         flight_files = []
         science_files = []
         for f in sorted(files):
-            if '.sbd' in f.lower():
-                flight_files.append(os.path.join(raw_data_path, f))
-            elif '.tbd' in f.lower():
-                science_files.append(os.path.join(raw_data_path, f))
+            if len(f.split('-')) > 1:
+                if '.sbd' in f.lower():
+                    flight_files.append(os.path.join(raw_data_path, f))
+                elif '.tbd' in f.lower():
+                    science_files.append(os.path.join(raw_data_path, f))
 
         sorted_files = pair_files(flight_files, science_files)
 

@@ -142,7 +142,10 @@ class SensorTrackerInterface(object):
             Platform
         ).join(PlatformType).filter(
             PlatformDeployment.end_time == None,
-            PlatformType.model == 'Slocum Glider G2'
+            or_(
+                PlatformType.model == 'Slocum Glider G2',
+                PlatformType.model == 'Slocum Glider G1'
+            )
         )
 
         return result.all()
@@ -489,6 +492,9 @@ class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
         self.__append_datatypes()
 
         return self
+
+    def __exit__(self, type, value, tb):
+        GliderNetCDFWriter.__exit__(self, type, value, tb)
 
     def __append_datatypes(self):
         """ Pulls datatypes from the sensor tracker database and merges with datatypes.json
