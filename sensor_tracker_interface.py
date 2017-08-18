@@ -292,7 +292,7 @@ class SensorTrackerInterface(object):
             "publisher_url": replace_none(deployment.publisher_url),
             "contributor_name": replace_none(deployment.contributor_name),
             "contributor_role": replace_none(deployment.contributor_role),
-            "metadata_link": replace_none(deployment.metadata_link)
+            "metadata_link": replace_none(deployment.metadata_link),
             "ioos_regional_association": " ",
             "acknowledgement": " ",
             "project": replace_none(project.name),
