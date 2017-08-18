@@ -259,6 +259,12 @@
             }
         }
     },
+    "sci_water_pressure-bar": {
+        "attrs": {
+          "positive": "down",
+          "reference_datum": "sea-surface"
+        }
+    },
     "m_pitch-rad": {
         "name": "pitch",
         "type": "f8",

@@ -287,20 +287,19 @@ class SensorTrackerInterface(object):
             "creator_email": replace_none(deployment.creator_email),
             "creator_name": replace_none(deployment.creator_name),
             "creator_url": replace_none(deployment.creator_url),
-            "publisher_email": " ",
-            "publisher_name": " ",
-            "publisher_url": " ",
+            "publisher_email": replace_none(deployment.publisher_email),
+            "publisher_name": replace_none(deployment.publisher_name),
+            "publisher_url": replace_none(deployment.publisher_url),
             "contributor_name": replace_none(deployment.contributor_name),
             "contributor_role": replace_none(deployment.contributor_role),
-            "support_name": " ",
-            "support_type": " ",
-            "support_email": " ",
-            "support_role": " ",
+            "metadata_link": replace_none(deployment.metadata_link)
             "ioos_regional_association": " ",
             "acknowledgement": " ",
             "project": replace_none(project.name),
             "sea_name": replace_none(deployment.sea_name),
-            "title": replace_none(deployment.title)
+            "title": replace_none(deployment.title),
+            "comment": replace_none(deployment.comment)
+            "references": replace_none(deployment.references)
         })
 
         attrs['deployment']['platform'] = {
@@ -506,4 +505,7 @@ class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
         st = SensorTrackerInterface()
         sensors = st.get_json_instrument_metadata_for_deployment(platform, start_time)
         for s in sensors:
-            self.datatypes[s] = sensors[s]
+            if s not in self.datatypes:
+                self.datatypes[s] = sensors[s]
+            else:
+                self.datatypes[s]['attrs'].update(sensors[s]['attrs'])
