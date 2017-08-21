@@ -298,7 +298,7 @@ class SensorTrackerInterface(object):
             "project": replace_none(project.name),
             "sea_name": replace_none(deployment.sea_name),
             "title": replace_none(deployment.title),
-            "comment": replace_none(deployment.comment)
+            "comment": replace_none(deployment.comment),
             "references": replace_none(deployment.references)
         })
 
@@ -487,13 +487,13 @@ class OpenGliderNetCDFWriterInterface(GliderNetCDFWriter):
         Updates global history variables.
         Called at beginning of Python with block.
         """
-        self = GliderNetCDFWriter.__enter__(self)
+        self = super(OpenGliderNetCDFWriterInterface, self).__enter__()
         self.__append_datatypes()
-
         return self
 
     def __exit__(self, type, value, tb):
-        GliderNetCDFWriter.__exit__(self, type, value, tb)
+        # GliderNetCDFWriter.__exit__(self, type, value, tb)
+        super(OpenGliderNetCDFWriterInterface, self).__exit__(type, value, tb)
 
     def __append_datatypes(self):
         """ Pulls datatypes from the sensor tracker database and merges with datatypes.json

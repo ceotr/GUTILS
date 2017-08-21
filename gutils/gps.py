@@ -8,6 +8,11 @@ from gutils import (
 import numpy as np
 
 
+def filter_locations(locations):
+    locations[locations > 600000] = np.nan
+    return locations
+
+
 def interpolate_gps(timestamps, latitude, longitude):
     """Calculates interpolated GPS coordinates between the two surfacings
     in a single glider binary data file.
@@ -18,7 +23,8 @@ def interpolate_gps(timestamps, latitude, longitude):
     Returns interpolated gps dataset over entire time domain of dataset
     """
 
-    validate_glider_args(timestamps, latitude, longitude)
+    latitude = filter_locations(latitude)
+    longitude = filter_locations(longitude)
 
     dataset = np.column_stack((
         timestamps,
@@ -35,6 +41,9 @@ def interpolate_gps(timestamps, latitude, longitude):
     if len(dataset) == 1:
         est_lat[:] = dataset[0, 1]
         est_lon[:] = dataset[0, 2]
+    elif len(dataset) == 0:
+        est_lat[:] = np.nan
+        est_lon[:] = np.nan
     else:
         # Interpolate data
         est_lat = np.interp(

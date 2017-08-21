@@ -6,6 +6,7 @@ from gutils.gbdr import (
 )
 
 import datetime
+import pickle
 
 import os
 import sys
@@ -44,13 +45,21 @@ def pair_files(flight_list, science_list):
     return paired_files
 
 
-if __name__ == '__main__':
+def main():
     with sensor_tracker_interface.SensorTrackerInterface() as tracker_interface:
         deployments = tracker_interface.get_active_deployments()
     # (glider_name, mission_start yyyy-mm-dd)
     base_path = '/var/opt/gmc_gliderbak/default/gliders/%s/from-glider'
 
     nc_dir = '/home/slocum/netcdf'
+
+    processing_cache_file = '/home/slocum/already_processed.pkl'
+
+    if os.path.isfile(processing_cache_file):
+        with open(processing_cache_file, 'rb') as f:
+            already_processed = pickle.load(f)
+    else:
+        already_processed = {}
 
     for res in deployments:
         deployment = res[0]
@@ -96,11 +105,21 @@ if __name__ == '__main__':
                 start_time
             )
             pp.pprint(json)
+            deployment_name = '{}-{}'.format(
+                json['deployment']['glider'],
+                json['deployment']['trajectory_date']
+            )
+            if deployment_name not in already_processed:
+                already_processed[deployment_name] = []
+
         # import pprint
         # pp = pprint.PrettyPrinter(indent=4)
         # pp.pprint(sorted(list(group_headers(reader.headers).keys())))
 
         for i, pair in enumerate(sorted_files):
+            if pair[0] in already_processed[deployment_name] or pair[1] in already_processed[deployment_name]:
+                print("Already processed: %s. Skipping" % pair)
+                continue
             attrs = json
             timestr = 'timestamp'
 
@@ -111,10 +130,6 @@ if __name__ == '__main__':
             science_path = pair[1]
 
             glider_name = attrs['deployment']['glider']
-            deployment_name = '{}-{}'.format(
-                glider_name,
-                attrs['deployment']['trajectory_date']
-            )
 
             try:
                 try:
@@ -160,7 +175,8 @@ if __name__ == '__main__':
                     # New profile! init the NetCDF output file
 
                     # Path to hold file while we create it
-                    _, tmp_path = tempfile.mkstemp(dir=tmpdir, suffix='.nc', prefix='gutils')
+                    fd, tmp_path = tempfile.mkstemp(dir=tmpdir, suffix='.nc', prefix='gutils')
+                    os.close(fd)
 
                     # Open new NetCDF
                     begin_time = datetime.datetime.utcfromtimestamp(line[timestr])
@@ -192,7 +208,7 @@ if __name__ == '__main__':
                     print("Already created: %s. Skipping" % file_path)
                     break
 
-                with sensor_tracker_interface.open_glider_netcdf(tmp_path, platform_name, start_time, 'a') as glider_nc:
+                with sensor_tracker_interface.OpenGliderNetCDFWriterInterface(tmp_path, platform_name, start_time, 'a') as glider_nc:
                     while line[timestr] <= profile_end:
                         line = fill_gps(line, interp_gps, 'timestamp', 'm_gps_')
                         line = fill_timestamp(line, interp_time, 'sci_m_present_time-timestamp')
@@ -227,6 +243,7 @@ if __name__ == '__main__':
 
                 profile_id += 1
 
+
             for tp, fp in movepairs:
                 try:
                     os.makedirs(os.path.dirname(fp))
@@ -234,3 +251,11 @@ if __name__ == '__main__':
                     pass  # destination folder exists
                 shutil.move(tp, fp)
             shutil.rmtree(tmpdir)
+
+            already_processed[deployment_name] += pair
+            with open(processing_cache_file, 'wb') as f:
+                pickle.dump(already_processed, f)
+
+
+if __name__ == '__main__':
+    main()
