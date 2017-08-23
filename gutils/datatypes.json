@@ -260,9 +260,31 @@
         }
     },
     "sci_water_pressure-bar": {
+        "name": "pressure",
+        "type": "f8",
+        "dimension": "time",
         "attrs": {
-          "positive": "down",
-          "reference_datum": "sea-surface"
+            "axis": "Z",
+            "units": "dbar",
+            "standard_name": "sea_water_pressure",
+            "comment": " ",
+            "valid_min": 0,
+            "valid_max": 2000,
+            "long_name": "Pressure",
+            "reference_datum": "sea-surface",
+            "positive": "down",
+            "observation_type": "calculated",
+            "platform": "platform",
+            "instrument": "instrument_ctd",
+            "accuracy": " ",
+            "precision": " ",
+            "resolution": " ",
+            "sensor_name": " "
+        },
+        "status_flag": {
+            "attrs": {
+                "long_name": "pressure Quality Flag"
+            }
         }
     },
     "m_pitch-rad": {

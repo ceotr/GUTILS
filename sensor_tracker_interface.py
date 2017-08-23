@@ -350,8 +350,8 @@ class SensorTrackerInterface(object):
                     "attrs": {
                         "units": replace_none(s.units),
                         "standard_name": replace_none(s.standard_name),
-                        "valid_min": replace_none(s.valid_min),
-                        "valid_max": replace_none(s.valid_max),
+                        # "valid_min": replace_none(s.valid_min),
+                        # "valid_max": replace_none(s.valid_max),
                         "long_name": replace_none(s.long_name),
                         "observation_type": "measured",
                         "platform": "platform",
@@ -369,6 +369,10 @@ class SensorTrackerInterface(object):
                         }
                     }
                 }
+                if s.valid_min is not None and s.valid_min != '':
+                    sensor_json[s.identifier]['attrs']['valid_min'] = s.valid_min
+                if s.valid_max is not None and s.valid_max != '':
+                    sensor_json[s.identifier]['attrs']['valid_max'] = s.valid_max
         return sensor_json
 
     def insert_sensor(self, sensor, instrument):
